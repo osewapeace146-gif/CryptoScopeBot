@@ -356,7 +356,7 @@ class ContentManager:
     
     def __init__(self):
         self.all_content = CONTENT_POOL + NEWS_STYLE_CONTENT + WEB3_CONTENT
-        self.random.seed(time.time())
+        random.seed(time.time())
     
     def get_random_content(self, category: str = None, exclude_index: int = None) -> Dict:
         """Get random content, optionally by category and excluding a specific index"""
@@ -369,7 +369,7 @@ class ContentManager:
             available = [c for c in available if c != self.all_content[exclude_index]]
         
         if not available:
-            return self.all_content[random.randint(0, len(self.all_content) - 1)]
+            return random.choice(self.all_content)
         
         return random.choice(available)
     
@@ -394,7 +394,6 @@ class BotManager:
         self.db = DatabaseManager(DB_PATH)
         self.content_manager = ContentManager()
         self.app = None
-        self.last_content_index = 0
     
     def build_app(self):
         """Build the Telegram application with handlers"""
@@ -571,7 +570,10 @@ Use the button below to toggle updates on or off, or use /stop to disable them."
                 content = self.content_manager.get_random_content(exclude_index=last_index)
                 
                 # Find the index of the selected content
-                content_index = self.content_manager.all_content.index(content) if content in self.content_manager.all_content else -1
+                try:
+                    content_index = self.content_manager.all_content.index(content)
+                except ValueError:
+                    content_index = -1
                 
                 # Send the message
                 await context.bot.send_message(
@@ -580,7 +582,8 @@ Use the button below to toggle updates on or off, or use /stop to disable them."
                 )
                 
                 # Update user's last content index and send time
-                self.db.update_user_content_index(user_id, content_index)
+                if content_index != -1:
+                    self.db.update_user_content_index(user_id, content_index)
                 self.db.update_last_sent_time(user_id)
                 
                 logger.info(f"✅ Sent update to user {user_id}")
