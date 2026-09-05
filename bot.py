@@ -3,8 +3,8 @@ import logging
 import sqlite3
 import random
 import time
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from datetime import datetime
+from typing import Dict, List, Optional, Any
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -12,7 +12,6 @@ from telegram.ext import (
     CommandHandler,
     CallbackQueryHandler,
     ContextTypes,
-    JobQueue,
 )
 from telegram.error import TelegramError, Forbidden, RetryAfter
 
@@ -305,17 +304,6 @@ class DatabaseManager:
         
         return [dict(user) for user in users]
     
-    def get_all_users(self) -> List[Dict]:
-        """Get all users"""
-        conn = self._get_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute("SELECT * FROM users")
-        users = cursor.fetchall()
-        conn.close()
-        
-        return [dict(user) for user in users]
-    
     def get_total_users(self) -> int:
         """Get total number of users"""
         conn = self._get_connection()
@@ -397,6 +385,7 @@ class BotManager:
     
     def build_app(self):
         """Build the Telegram application with handlers"""
+        # Use the recommended builder pattern for python-telegram-bot v20+
         self.app = Application.builder().token(self.token).build()
         
         # Add command handlers
@@ -506,7 +495,8 @@ Use the button below to toggle updates on or off, or use /stop to disable them."
     
     async def latest_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle the /latest command - send the latest update"""
-        await self.send_latest_update(update, context)
+        content = self.content_manager.get_random_content()
+        await update.message.reply_text(self.content_manager.format_update_message(content))
     
     async def learn_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle the /learn command - send educational content"""
@@ -516,11 +506,6 @@ Use the button below to toggle updates on or off, or use /stop to disable them."
     async def web3_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle the /web3 command - send Web3 content"""
         content = self.content_manager.get_random_content(category="web3")
-        await update.message.reply_text(self.content_manager.format_update_message(content))
-    
-    async def send_latest_update(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Send the latest available update to the user"""
-        content = self.content_manager.get_random_content()
         await update.message.reply_text(self.content_manager.format_update_message(content))
     
     async def button_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
