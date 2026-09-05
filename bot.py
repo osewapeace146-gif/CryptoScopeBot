@@ -4,7 +4,7 @@ import sqlite3
 import random
 import time
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -385,7 +385,6 @@ class BotManager:
     
     def build_app(self):
         """Build the Telegram application with handlers"""
-        # Use the recommended builder pattern for python-telegram-bot v20+
         self.app = Application.builder().token(self.token).build()
         
         # Add command handlers
@@ -578,7 +577,6 @@ Use the button below to toggle updates on or off, or use /stop to disable them."
                 
             except Forbidden:
                 logger.warning(f"Bot was blocked by user {user_id}")
-                # Disable updates for this user since bot is blocked
                 self.db.update_subscription(user_id, False)
                 
             except RetryAfter as e:
@@ -607,11 +605,7 @@ def main():
         
         # Start the bot with polling
         logger.info("Starting polling...")
-        app.run_polling(
-            allowed_updates=Update.ALL_TYPES,
-            stop_signals=None,
-            close_loop=False,
-        )
+        app.run_polling()
         
     except Exception as e:
         logger.error(f"Fatal error: {e}")
